@@ -22,7 +22,13 @@ void app_main()
 
 	/* MAIN CODE */
 	
+	lock_stop = 1; // Условие всех циклов
+
 	lock_event_group = xEventGroupCreate();
 	
-	ESP_ERROR_CHECK(Lock_Access_Init());
+	ESP_LOGI(TAG, "Start initializing...");
+
+	ESP_ERROR_CHECK(Lock_Access_Init ());
+	ESP_ERROR_CHECK(Lock_Latch_Init ());
+	ESP_ERROR_CHECK(Lock_TButton_Init ());
 }
