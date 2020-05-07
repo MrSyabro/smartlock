@@ -42,13 +42,12 @@ void lock_access_rc522_task (void *pvParameter)
 			if (memcmp(UID, uid, MFRC522_MAX_LEN) == 0) {
 				// Кагбэ доступ получен.
 				ESP_LOGD(TAG, "UID done. Open");
-				xEventGroupSetBits(lock_event_group, LATCH_OPEN);
+				xEventGroupSetBits(lock_event_group, CARD_ACCESS);
+				vTaskDelay(1000 / portTICK_RATE_MS);
 			}else{
 				ESP_LOGD(TAG, "UID fail");
 				xEventGroupSetBits(lock_event_group, CARD_BLOCKED);
 			}
-		}else{
-			xEventGroupClearBits(lock_event_group, CARD_BLOCKED);
 		}
 		
 		vTaskDelay(100 / portTICK_RATE_MS);

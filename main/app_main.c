@@ -28,9 +28,9 @@ void app_main()
 	
 	ESP_LOGI(TAG, "Start initializing...");
 
-	ESP_ERROR_CHECK(Lock_WiFi_Init ());
-	ESP_ERROR_CHECK(Lock_MQTT_Init ());
 	ESP_ERROR_CHECK(Lock_Access_Init ());
 	ESP_ERROR_CHECK(Lock_Latch_Init ());
+	ESP_ERROR_CHECK(Lock_WiFi_Init ());
+	ESP_ERROR_CHECK(Lock_MQTT_Init ());
 	ESP_ERROR_CHECK(Lock_TButton_Init ());
 }
