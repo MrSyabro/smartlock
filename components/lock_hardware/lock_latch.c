@@ -53,7 +53,7 @@ esp_err_t lock_latch_task(void* params)
 		if ((group_bits & OPEN_LATCH) == OPEN_LATCH)
 		{
 			Lock_Latch_open ();
-			vTaskDelay(LATCH_OPEN_DELAY / portTICK_RATE_MS);
+			vTaskDelay(LOCK_LATCH_DELAY / portTICK_RATE_MS);
 			Lock_Latch_close ();
 		}
 	}

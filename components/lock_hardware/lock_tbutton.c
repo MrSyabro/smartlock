@@ -1,11 +1,39 @@
+#include <stdint.h>
 #include "freertos/FreeRTOS.h"
 #include "freertos/task.h"
 #include "freertos/queue.h"
 #include "freertos/event_groups.h"
 
+#include "lock_hardware.h"
+
 #include "driver/gpio.h"
 
 static const char *TAG = "Lock_TButton";
+
+static xQueueHandle gpio_evt_queue = NULL;
+
+static void gpio_isr_handler(void *arg)
+{
+    uint32_t gpio_num = (uint32_t) arg;
+    xQueueSendFromISR(gpio_evt_queue, &gpio_num, NULL);
+}
+
+static void lock_tbutton_gpio_task(void *arg)
+{
+    ESP_LOGD(TAG, "Start task")
+
+	uint32_t io_num;
+
+    for (;;) {
+        if (xQueueReceive(gpio_evt_queue, &io_num, portMAX_DELAY)) {
+            if (io_num == LOCK_TBUTTON_GPIO_SEL)
+			{
+				xEventGroupSetBits(lock_event_group, BELL);
+				ESP_LOGD(TAG, "GPIO[%d] intr, val: %d\n", io_num, gpio_get_level(io_num));
+			}
+        }
+    }
+}
 
 void Lock_TButton_init_gpio ()
 {
@@ -23,30 +51,24 @@ void Lock_TButton_init_gpio ()
     gpio_config(&io_conf);
 
     //change gpio intrrupt type for one pin
-    gpio_set_intr_type(GPIO_INPUT_IO_0, GPIO_INTR_ANYEDGE);
+    gpio_set_intr_type(LOCK_TBUTTON_GPIO, GPIO_INTR_ANYEDGE);
 
     //create a queue to handle gpio event from isr
     gpio_evt_queue = xQueueCreate(10, sizeof(uint32_t));
     //start gpio task
-    xTaskCreate(gpio_task_example, "gpio_task_example", 2048, NULL, 10, NULL);
+    xTaskCreate(lock_tbutton_gpio_task, "lock_tbutton_gpio_task", configMINIMAL_STACK_SIZE * 1, NULL, 10, NULL);
 
     //install gpio isr service
     gpio_install_isr_service(0);
-    //hook isr handler for specific gpio pin
-    gpio_isr_handler_add(GPIO_INPUT_IO_0, gpio_isr_handler, (void *) GPIO_INPUT_IO_0);
-    //hook isr handler for specific gpio pin
-    gpio_isr_handler_add(GPIO_INPUT_IO_1, gpio_isr_handler, (void *) GPIO_INPUT_IO_1);
 
-    //remove isr handler for gpio number.
-    gpio_isr_handler_remove(GPIO_INPUT_IO_0);
     //hook isr handler for specific gpio pin again
-    gpio_isr_handler_add(GPIO_INPUT_IO_0, gpio_isr_handler, (void *) GPIO_INPUT_IO_0);
+    gpio_isr_handler_add(LOCK_TBUTTON_GPIO, gpio_isr_handler, (void *) LOCK_TBUTTON_GPIO);
 }
 
 esp_err_t Lock_TButton_Init ()
 {
 	ESP_LOGD(TAG, "Init start..");
-
+	Lock_TButton_init_gpio ();
 	ESP_LOGI(TAG, "Init end");
 
 	return ESP_OK;

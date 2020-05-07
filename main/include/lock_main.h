@@ -5,7 +5,7 @@
 
 #define LATCH_OPEN      BIT0;
 #define BELL            BIT1;
-//#define TBUTTON_PRESSED BIT2;
+#define CARD_BLOCKER    BIT2;
 //#define MQTT_OPEN       BIT3;
 //#define MQTT_CLOSE      BIT4;
 

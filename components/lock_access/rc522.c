@@ -61,12 +61,12 @@ void lock_access_rc522_task (void *pvParameter)
 	vTaskDelete(NULL);
 }
 
-esp_err_t Lock_Access_Init(){
+esp_err_t Lock_Access_Init (){
 	MFRC522_Init ();
 	
 	if (print_chip_version () != ESP_OK) return ESP_FAIL;
 	
-	xTaskCreate(lock_access_rc522_task, "lock_access_rc522_task", configMINIMAL_STACK_SIZE * 2, NULL, 5, NULL);
+	xTaskCreate (lock_access_rc522_task, "lock_access_rc522_task", configMINIMAL_STACK_SIZE * 2, NULL, 5, NULL);
 	
 	return ESP_OK;
 }
