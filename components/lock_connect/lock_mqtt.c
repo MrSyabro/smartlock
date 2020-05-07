@@ -36,7 +36,7 @@ esp_err_t mqtt_event_handler(esp_mqtt_event_handle_t event)
 				if (!memcmp(event->data, "open", event->data_len))
 				{
 					ESP_LOGD(TAG, "Send open latch");
-					xEventGroupSetBits(lock_event_group, LATCH_OPEN);
+					xEventGroupSetBits(lock_event_group, CARD_ACCESS);
 				}else if (!memcmp(event->data, "close", event->data_len)){
 					ESP_LOGD(TAG, "Send close latch");
 					// TODO: Добавить возможность принудительно закрыть замок
@@ -70,10 +70,28 @@ void mqtt_app_start (void)
 void lock_mqtt_task (void* params)
 {
 	int group_bits;
+	int bell = 0;
+	int latch = 0;
 
 	while (!lock_stop) {
-		group_bits = xEventGroupWaitBits(lock_event_group, LATCH_OPEN | CARD_BLOCKED | BELL, false, true, portMAX_DELAY);
-		// TODO: оставлю на будущее..
+		group_bits = xEventGroupWaitBits(lock_event_group, BELL | LATCH_OPEN, false, true, 500 / portTICK_RATE_MS);
+		if (bell != (group_bits & BELL))
+		{
+			bell = (group_bits & BELL);
+
+			if (bell)
+				esp_mqtt_client_publish(client, "/door/bell", "1", 0, 0, 0);
+			else
+				esp_mqtt_client_publish(client, "/door/bell", "0", 0, 0, 0);
+		}
+		if (latch != (group_bits & LATCH_OPEN))
+		{
+			latch = (group_bits & LATCH_OPEN);
+			if (latch)
+				esp_mqtt_client_publish(client, "/door/lock/s", "open", 0, 0, 0);
+			else
+				esp_mqtt_client_publish(client, "/door/lock/s", "close", 0, 0, 0);
+		}
 	}
 
 	ESP_LOGD(TAG, "Stop mqtt task");
@@ -84,7 +102,7 @@ esp_err_t Lock_MQTT_Init ()
 {
 	ESP_LOGD(TAG, "Init start..");
 	mqtt_app_start ();
-	//xTaskCreate (lock_mqtt_task, "lock_mqtt_task", configMINIMAL_STACK_SIZE * 2, NULL, 5, NULL);
+	xTaskCreate (lock_mqtt_task, "lock_mqtt_task", configMINIMAL_STACK_SIZE * 2, NULL, 5, NULL);
 	ESP_LOGI(TAG, "Init end");
 	return ESP_OK;
 }

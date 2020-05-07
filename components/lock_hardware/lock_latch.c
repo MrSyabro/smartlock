@@ -28,9 +28,7 @@ esp_err_t Lock_Latch_open ()
 {
 	ESP_LOGD(TAG, "Latch open");
 	gpio_set_level(LOCK_LATCH_GPIO, 1);
-
-	int msg_id = esp_mqtt_client_publish(client, "/door/lock/s", "open", 0, 0, 0);
-	ESP_LOGD(TAG, "sent publish successful, msg_id=%d", msg_id);
+	xEventGroupSetBits(lock_event_group, LATCH_OPEN);
 
 	return ESP_OK;
 }
@@ -39,9 +37,7 @@ esp_err_t Lock_Latch_close ()
 {
 	ESP_LOGD(TAG, "Latch close");
 	gpio_set_level(LOCK_LATCH_GPIO, 0);
-
-	int msg_id = esp_mqtt_client_publish(client, "/door/lock/s", "close", 0, 0, 0);
-	ESP_LOGD(TAG, "sent publish successful, msg_id=%d", msg_id);
+	xEventGroupClearBits(lock_event_group, LATCH_OPEN);
 
 	return ESP_OK;
 }
@@ -49,15 +45,11 @@ esp_err_t Lock_Latch_close ()
 void lock_latch_task(void* params)
 {
 	ESP_LOGD(TAG, "Start Latch task..");
-	int group_bits;
-	while (!lock_stop){
-		group_bits = xEventGroupWaitBits(lock_event_group, LATCH_OPEN, true, true, portMAX_DELAY);
-		if ((group_bits & LATCH_OPEN) == LATCH_OPEN)
-		{
-			Lock_Latch_open ();
-			vTaskDelay(LOCK_LATCH_DELAY / portTICK_RATE_MS);
-			Lock_Latch_close ();
-		}
+	while (!lock_stop) {
+		xEventGroupWaitBits(lock_event_group, CARD_ACCESS, true, true, portMAX_DELAY);
+		Lock_Latch_open ();
+		vTaskDelay(LOCK_LATCH_DELAY / portTICK_RATE_MS);
+		Lock_Latch_close ();
 	}
 
 	ESP_LOGD(TAG, "Stop Latch task");
@@ -70,9 +62,8 @@ esp_err_t Lock_Latch_Init()
 
 	Lock_Latch_init_gpio();
 
+	xTaskCreate(lock_latch_task, "lock_latch_task", configMINIMAL_STACK_SIZE * 2, NULL, 4, NULL);
 	ESP_LOGI(TAG, "Init end");
-
-	xTaskCreate(lock_latch_task, "lock_latch_task", configMINIMAL_STACK_SIZE * 2, NULL, 9, NULL);
 
 	return ESP_OK;
 }

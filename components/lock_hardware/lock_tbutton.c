@@ -21,11 +21,11 @@ void lock_tbutton_gpio_task(void *arg)
         if (xQueueReceive(gpio_evt_queue, &io_num, portMAX_DELAY)) {
             if (io_num == LOCK_TBUTTON_GPIO)
 			{
-				int msg_id;
-				if (gpio_get_level(io_num)) msg_id = esp_mqtt_client_publish(client, "/door/bell", "1", 0, 0, 0);
-				else msg_id = esp_mqtt_client_publish(client, "/door/bell", "0", 0, 0, 0);
+				if (gpio_get_level(io_num))
+					xEventGroupSetBits(lock_event_group, BELL);
+				else
+					xEventGroupClearBits(lock_event_group, BELL);
 				ESP_LOGD(TAG, "GPIO[%d] intr, val: %d\n", io_num, gpio_get_level(io_num));
-				ESP_LOGD(TAG, "sent publish successful, msg_id=%d", msg_id);
 			}
         }
     }
