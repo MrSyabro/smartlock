@@ -1,7 +1,10 @@
-#ifndef LOCK_HARDWARE
-#define LOCK_HARDWARE
+#include "lock_main.h"
+#include "driver/gpio.h"
 
-#define LOCK_LATCH_GPIO       2
+#ifndef LOCK_HARDWARE_H
+#define LOCK_HARDWARE_H
+
+#define LOCK_LATCH_GPIO       5
 #define LOCK_LATCH_GPIO_SEL   (1ULL<<LOCK_LATCH_GPIO)
 
 #define LOCK_TBUTTON_GPIO     4

@@ -1,11 +1,5 @@
-#include <stdint.h>
 #include "lock_main.h"
-#include "esp_log.h"
-#include "driver/gpio.h"
-
-#include "freertos/FreeRTOS.h"
-#include "freertos/task.h"
-#include "freertos/event_groups.h"
+#include "lock_hardware.h"
 
 static const char *TAG = "Lock_Latch";
 
@@ -34,6 +28,10 @@ esp_err_t Lock_Latch_open ()
 {
 	ESP_LOGD(TAG, "Latch open");
 	gpio_set_level(LOCK_LATCH_GPIO, 1);
+
+	int msg_id = esp_mqtt_client_publish(client, "/door/lock/s", "open", 0, 0, 0);
+	ESP_LOGD(TAG, "sent publish successful, msg_id=%d", msg_id);
+
 	return ESP_OK;
 }
 
@@ -41,16 +39,20 @@ esp_err_t Lock_Latch_close ()
 {
 	ESP_LOGD(TAG, "Latch close");
 	gpio_set_level(LOCK_LATCH_GPIO, 0);
+
+	int msg_id = esp_mqtt_client_publish(client, "/door/lock/s", "close", 0, 0, 0);
+	ESP_LOGD(TAG, "sent publish successful, msg_id=%d", msg_id);
+
 	return ESP_OK;
 }
 
-esp_err_t lock_latch_task(void* params)
+void lock_latch_task(void* params)
 {
 	ESP_LOGD(TAG, "Start Latch task..");
-	uint8_t group_bits;
-	while (lock_stop){
-		group_bits = xEventGroupWaitBits(lock_event_group, OPEN_LATCH, true, true, portMAX_DELAY);
-		if ((group_bits & OPEN_LATCH) == OPEN_LATCH)
+	int group_bits;
+	while (!lock_stop){
+		group_bits = xEventGroupWaitBits(lock_event_group, LATCH_OPEN, true, true, portMAX_DELAY);
+		if ((group_bits & LATCH_OPEN) == LATCH_OPEN)
 		{
 			Lock_Latch_open ();
 			vTaskDelay(LOCK_LATCH_DELAY / portTICK_RATE_MS);
@@ -70,7 +72,7 @@ esp_err_t Lock_Latch_Init()
 
 	ESP_LOGI(TAG, "Init end");
 
-	xTaskCreate(lock_latch_task, "lock_latch_task", configMINIMAL_STACK_SIZE * 1, NULL, 5, NULL);
+	xTaskCreate(lock_latch_task, "lock_latch_task", configMINIMAL_STACK_SIZE * 2, NULL, 9, NULL);
 
 	return ESP_OK;
 }

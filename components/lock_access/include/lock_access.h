@@ -1,9 +1,7 @@
-#include <stdint.h>
+#include "lock_main.h"
 
-#include "esp_log.h"
-
-#ifndef LOCK_ACCESS
-#define LOCK_ACCESS
+#ifndef LOCK_ACCESS_H
+#define LOCK_ACCESS_H
 
 esp_err_t Lock_Access_Init();
 

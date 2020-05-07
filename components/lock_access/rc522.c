@@ -1,11 +1,4 @@
-#include <stdint.h>
-#include "esp_log.h"
 #include "lock_main.h"
-
-#include "freertos/FreeRTOS.h"
-#include "freertos/task.h"
-#include "freertos/queue.h"
-
 #include "lock_access.h"
 #include "rc522.h"
 
@@ -13,7 +6,7 @@
 /* {0x7b, 0x1d, 0xc3, 0x1b, 0xbe} // ID карты, которой все можно			*/
 
 static const char *TAG = "Lock_RC522";
-static const char *UID = {0x7b, 0x1d, 0xc3, 0x1b, 0xbe}; // ID карты, которой все можно
+static const uint8_t UID[MFRC522_MAX_LEN] = {0x7b, 0x1d, 0xc3, 0x1b, 0xbe, 0}; // ID карты, которой все можно
 
 esp_err_t print_chip_version ()
 {
@@ -27,28 +20,31 @@ esp_err_t print_chip_version ()
 		case 0x91: name = "v1.0"; break;
 		case 0x92: name = "v2.0"; break;
 		case 0x12: name = "counterfeit chip"; break;
-		default:   name = "Chip not found";
+		default:   name = "Chip not found"; ver = 0;
 	}
 	
 	ESP_LOGI(TAG, "RC522 version: %s (0x%0x)", name, ver);
 	
-	if (ver == 0x12) return ESP_FAIL;
+	if (ver == 0) return ESP_FAIL;
 	return ESP_OK;
 }
 
 void lock_access_rc522_task (void *pvParameter)
 {
+	ESP_LOGD(TAG, "Start task..");
 	// Ципл проверки карты и вывода ID, если карта считана
 	uint8_t uid[MFRC522_MAX_LEN];
 	uint8_t status;
-	while (lock_stop){
+	while (!lock_stop){
 		status = MFRC522_Check(&uid); // Проверяем карту
 		
 		if (status == MI_OK){
-			if (memcmp(UID, uid, 5) == 0) {
+			if (memcmp(UID, uid, MFRC522_MAX_LEN) == 0) {
 				// Кагбэ доступ получен.
-				xEventGroupSetBits(lock_event_group, OPEN_LATCH);
+				ESP_LOGD(TAG, "UID done. Open");
+				xEventGroupSetBits(lock_event_group, LATCH_OPEN);
 			}else{
+				ESP_LOGD(TAG, "UID fail");
 				xEventGroupSetBits(lock_event_group, CARD_BLOCKED);
 			}
 		}else{
@@ -61,7 +57,8 @@ void lock_access_rc522_task (void *pvParameter)
 	vTaskDelete(NULL);
 }
 
-esp_err_t Lock_Access_Init (){
+esp_err_t Lock_Access_Init ()
+{
 	MFRC522_Init ();
 	
 	if (print_chip_version () != ESP_OK) return ESP_FAIL;

@@ -71,7 +71,7 @@ void MFRC522_WriteRegister(uint32_t addr, uint32_t val) {
 	trans.cmd = &addr;
     spi_trans(HSPI_HOST, &trans);
 	
-	ESP_LOGD(TAG, "Writing %0x = %0x", addr >> 1, val);
+	ESP_LOGV(TAG, "Writing %0x = %0x", addr >> 1, val);
 }
 
 uint32_t MFRC522_ReadRegister(uint32_t o_addr) {
@@ -87,7 +87,7 @@ uint32_t MFRC522_ReadRegister(uint32_t o_addr) {
 	trans.bits.cmd = 8;
     spi_trans(HSPI_HOST, &trans);
 	
-	ESP_LOGD(TAG, "Reading %0x = %0x", o_addr, val);
+	ESP_LOGV(TAG, "Reading %0x = %0x", o_addr, val);
 	
 	return val;
 }
