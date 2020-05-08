@@ -22,15 +22,20 @@ void app_main()
 
 	/* MAIN CODE */
 	
-	lock_stop = 1; // Условие всех циклов
+	lock_stop = 1; // Условие всех циклов (если 0 - все остановятся)
 
 	lock_event_group = xEventGroupCreate();
 	
 	ESP_LOGI(TAG, "Start initializing...");
 
-	ESP_ERROR_CHECK(Lock_Access_Init ());
 	ESP_ERROR_CHECK(Lock_Latch_Init ());
-	ESP_ERROR_CHECK(Lock_WiFi_Init ());
-	ESP_ERROR_CHECK(Lock_MQTT_Init ());
-	ESP_ERROR_CHECK(Lock_TButton_Init ());
+	if (Lock_Access_Init () != ESP_OK)
+	{
+		Lock_Latch_open();
+		// Отрабатываем ошибку модуля RC522 (Ну так оповестить можно -.-)
+	}else{
+		ESP_ERROR_CHECK(Lock_WiFi_Init ());
+		ESP_ERROR_CHECK(Lock_MQTT_Init ());
+		ESP_ERROR_CHECK(Lock_TButton_Init ());
+	}
 }

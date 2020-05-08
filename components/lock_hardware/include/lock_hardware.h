@@ -15,4 +15,7 @@
 esp_err_t Lock_Latch_Init ();
 esp_err_t Lock_TButton_Init ();
 
+esp_err_t Lock_Latch_open();
+esp_err_t Lock_Latch_close();
+
 #endif

@@ -21,11 +21,11 @@
 #ifndef LOCK_MAIN
 #define LOCK_MAIN
 
-#define LATCH_OPEN      BIT3
+#define LATCH_OPEN      BIT0
 #define BELL            BIT1
 #define CARD_BLOCKED    BIT2
-#define CARD_ACCESS     BIT0
-#define CMD_LATCH_OPEN  BIT4
+#define CARD_ACCESS     BIT3
+#define MQTT_ACCESS     BIT4
 
 EventGroupHandle_t lock_event_group;
 
